@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusFlow - Smart Study Timer | Hack Days 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        bgDark: '#0f0f1a',
+                        cardDark: '#18182a',
+                        cardBorder: '#2a2a45',
+                        accentViolet: '#7c3aed',
+                        accentPink: '#ec4899',
+                        accentEmerald: '#10b981',
+                        accentAmber: '#f59e0b',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: radial-gradient(circle at 50% 0%, #1e1233 0%, #0f0f1a 70%);
+            background-attachment: fixed;
+            color: #f3f4f6;
+        }
+
+        .glass-card {
+            background: rgba(24, 24, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card-sm {
+            background: rgba(30, 30, 52, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glow-violet {
+            box-shadow: 0 0 25px -5px rgba(124, 58, 237, 0.4);
+        }
+
+        .glow-emerald {
+            box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.4);
+        }
+
+        .glow-pink {
+            box-shadow: 0 0 25px -5px rgba(236, 72, 153, 0.4);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f0f1a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a45;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b3b61;
+        }
+
+        /* Progress ring smooth transition */
+        #progress-ring-circle {
+            transition: stroke-dashoffset 0.5s ease-in-out, stroke 0.5s ease-in-out;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="min-h-full flex flex-col font-sans text-gray-100 antialiased selection:bg-accentViolet selection:text-white">
+
+    <!-- Top Navigation & Branding -->
+    <header class="w-full border-b border-cardBorder/60 bg-bgDark/80 backdrop-blur-md sticky top-0 z-50 px-4 lg:px-8 py-3.5">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            
+            <!-- Logo & Badge -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-accentViolet to-accentPink flex items-center justify-center shadow-lg shadow-accentViolet/30">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400">FocusFlow</h1>
+                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accentViolet/20 text-accentViolet border border-accentViolet/30 tracking-wide uppercase">Hack Days 2026</span>
+                    </div>
+                    <p class="text-xs text-gray-400">Smart Productivity & Campus Life</p>
+                </div>
+            </div>
+
+            <!-- Stats Header Bar -->
+            <div class="flex items-center gap-2 sm:gap-6 text-xs sm:text-sm bg-cardDark/80 px-4 py-2 rounded-xl border border-cardBorder/50">
+                <div class="flex items-center gap-2">
+                    <span class="text-accentViolet font-bold text-base sm:text-lg" id="stat-sessions">0</span>
+                    <span class="text-gray-400">Sessions</span>
+                </div>
+                <div class="h-4 w-px bg-cardBorder"></div>
+                <div class="flex items-center gap-2">
+                    <span class="text-accentEmerald font-bold text-base sm:text-lg" id="stat-time">0m</span>
+                    <span class="text-gray-400">Focused</span>
+                </div>
+                <div class="h-4 w-px bg-cardBorder"></div>
+                <div class="flex items-center gap-2">
+                    <span class="text-accentPink font-bold text-base sm:text-lg" id="stat-tasks">0</span>
+                    <span class="text-gray-400">Tasks Done</span>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left Column: Timer & Controls (7 Cols on LG) -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- Main Timer Card -->
+            <div class="glass-card rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-300">
+                
+                <!-- Background Accent Glow -->
+                <div id="mode-glow" class="absolute -top-24 -left-24 w-72 h-72 bg-accentViolet/15 rounded-full blur-3xl pointer-events-none"></div>
+
+                <!-- Mode Navigation Tabs -->
+                <div class="flex bg-bgDark/80 p-1.5 rounded-2xl border border-cardBorder mb-8 w-full max-w-md justify-between">
+                    <button id="tab-focus" onclick="switchMode('focus')" class="flex-1 py-2 px-3 rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 bg-accentViolet text-white shadow-lg shadow-accentViolet/30">
+                        🧠 Focus
+                    </button>
+                    <button id="tab-shortBreak" onclick="switchMode('shortBreak')" class="flex-1 py-2 px-3 rounded-xl font-semibold text-xs sm:text-sm text-gray-400 hover:text-white transition-all duration-200">
+                        ☕ Short Break
+                    </button>
+                    <button id="tab-longBreak" onclick="switchMode('longBreak')" class="flex-1 py-2 px-3 rounded-xl font-semibold text-xs sm:text-sm text-gray-400 hover:text-white transition-all duration-200">
+                        🌴 Long Break
+                    </button>
+                </div>
+
+                <!-- Active Target Task Display Banner -->
+                <div id="active-task-banner" class="w-full max-w-md mb-6 hidden">
+                    <div class="bg-accentViolet/10 border border-accentViolet/30 rounded-xl p-3 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5 overflow-hidden">
+                            <span class="w-2 h-2 rounded-full bg-accentViolet animate-pulse flex-shrink-0"></span>
+                            <span class="text-xs text-gray-300 font-medium">Target:</span>
+                            <span id="active-task-title" class="text-xs font-semibold text-white truncate">Task Name</span>
+                        </div>
+                        <button onclick="clearActiveTask()" class="text-gray-400 hover:text-white text-xs ml-2">✕</button>
+                    </div>
+                </div>
+
+                <!-- Circular SVG Timer Display -->
+                <div class="relative w-64 h-64 sm:w-80 sm:h-80 flex items-center justify-center my-2">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 220 220">
+                        <!-- Track Circle -->
+                        <circle cx="110" cy="110" r="92" stroke="#2a2a45" stroke-width="10" fill="transparent" />
+                        <!-- Progress Circle -->
+                        <circle id="progress-ring-circle" cx="110" cy="110" r="92" stroke="#7c3aed" stroke-width="10" 
+                                fill="transparent" stroke-linecap="round" stroke-dasharray="578" stroke-dashoffset="0" />
+                    </svg>
+
+                    <!-- Center Digital Countdown -->
+                    <div class="absolute flex flex-col items-center justify-center text-center">
+                        <span id="mode-badge" class="text-xs font-bold uppercase tracking-widest text-accentViolet bg-accentViolet/10 px-3 py-1 rounded-full border border-accentViolet/20 mb-2">
+                            FOCUS TIME
+                        </span>
+                        <span id="time-display" class="font-mono text-5xl sm:text-6xl font-bold tracking-tight text-white drop-shadow-md">
+                            25:00
+                        </span>
+                        <span id="timer-status" class="text-xs text-gray-400 mt-2 font-medium">Ready to start</span>
+                    </div>
+                </div>
+
+                <!-- Quick Presets -->
+                <div class="flex items-center gap-2 mt-4 mb-8">
+                    <span class="text-xs text-gray-400 mr-1 font-medium">Quick Set:</span>
+                    <button onclick="setCustomDuration(15)" class="text-xs bg-bgDark hover:bg-cardBorder px-2.5 py-1 rounded-lg border border-cardBorder/60 transition">15m</button>
+                    <button onclick="setCustomDuration(25)" class="text-xs bg-bgDark hover:bg-cardBorder px-2.5 py-1 rounded-lg border border-cardBorder/60 transition">25m</button>
+                    <button onclick="setCustomDuration(45)" class="text-xs bg-bgDark hover:bg-cardBorder px-2.5 py-1 rounded-lg border border-cardBorder/60 transition">45m</button>
+                    <button onclick="setCustomDuration(5)" class="text-xs bg-bgDark hover:bg-cardBorder px-2.5 py-1 rounded-lg border border-cardBorder/60 transition">5m break</button>
+                </div>
+
+                <!-- Main Timer Controls -->
+                <div class="flex items-center gap-4 w-full max-w-sm justify-center">
+                    <button id="btn-start" onclick="toggleTimer()" class="flex-1 py-3.5 px-6 rounded-2xl font-bold text-base bg-accentViolet hover:bg-violet-600 text-white shadow-lg glow-violet transition-all duration-200 active:scale-95 flex items-center justify-center gap-2">
+                        <svg id="icon-start" class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <span id="lbl-start">Start Focus</span>
+                    </button>
+                    <button onclick="resetTimer()" class="p-3.5 rounded-2xl bg-bgDark hover:bg-cardBorder text-gray-300 hover:text-white border border-cardBorder transition active:scale-95" title="Reset Session">
+                        <svg class="w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    </button>
+                    <button onclick="skipSession()" class="p-3.5 rounded-2xl bg-bgDark hover:bg-cardBorder text-gray-300 hover:text-white border border-cardBorder transition active:scale-95" title="Skip Session">
+                        <svg class="w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Ambient Sound Generator Card (Web Audio API - Zero Broken URLs) -->
+            <div class="glass-card rounded-3xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-xl">🎧</span>
+                        <h2 class="font-bold text-base text-white">Synthesized Ambient Sounds</h2>
+                    </div>
+                    <span class="text-[10px] bg-accentViolet/20 text-accentViolet border border-accentViolet/30 px-2 py-0.5 rounded-full font-semibold">Web Audio Synth</span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    <button id="snd-off" onclick="playAmbient('off')" class="snd-btn py-2.5 px-3 rounded-xl border border-cardBorder bg-accentViolet text-white font-semibold text-xs transition">
+                        🔇 Mute
+                    </button>
+                    <button id="snd-rain" onclick="playAmbient('rain')" class="snd-btn py-2.5 px-3 rounded-xl border border-cardBorder bg-bgDark hover:bg-cardBorder text-gray-300 font-semibold text-xs transition">
+                        🌧️ Rain Noise
+                    </button>
+                    <button id="snd-pink" onclick="playAmbient('pink')" class="snd-btn py-2.5 px-3 rounded-xl border border-cardBorder bg-bgDark hover:bg-cardBorder text-gray-300 font-semibold text-xs transition">
+                        🌊 Pink Waves
+                    </button>
+                    <button id="snd-brown" onclick="playAmbient('brown')" class="snd-btn py-2.5 px-3 rounded-xl border border-cardBorder bg-bgDark hover:bg-cardBorder text-gray-300 font-semibold text-xs transition">
+                        🔥 Deep Hum
+                    </button>
+                </div>
+
+                <!-- Volume Slider -->
+                <div class="flex items-center gap-3 bg-bgDark/60 p-3 rounded-xl border border-cardBorder/50">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+                    <input type="range" id="ambient-volume" min="0" max="1" step="0.05" value="0.3" oninput="updateVolume(this.value)" class="w-full h-1.5 bg-cardBorder rounded-lg appearance-none cursor-pointer accent-accentViolet">
+                    <span id="volume-lbl" class="text-xs font-mono text-gray-400 w-8 text-right">30%</span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Task Manager & Daily Analytics (5 Cols on LG) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Tasks & Checklist Card -->
+            <div class="glass-card rounded-3xl p-6 flex flex-col h-[460px]">
+                
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">✅</span>
+                        <h2 class="font-bold text-base text-white">Study Tasks</h2>
+                    </div>
+                    <span id="task-counter-badge" class="text-xs bg-bgDark px-2.5 py-1 rounded-lg border border-cardBorder text-gray-400 font-medium">0 Tasks</span>
+                </div>
+
+                <!-- Add Task Form -->
+                <form onsubmit="handleAddTask(event)" class="flex gap-2 mb-4">
+                    <input type="text" id="task-input" placeholder="What are you studying today?" required 
+                           class="flex-1 bg-bgDark/90 border border-cardBorder/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accentViolet transition">
+                    <input type="number" id="task-pomo-input" placeholder="Pomo" min="1" max="10" value="1" title="Estimated Pomodoro Sessions"
+                           class="w-16 bg-bgDark/90 border border-cardBorder/80 rounded-xl px-2 py-2.5 text-xs text-center text-white focus:outline-none focus:border-accentViolet transition">
+                    <button type="submit" class="bg-accentViolet hover:bg-violet-600 text-white font-semibold text-xs px-4 rounded-xl transition flex items-center justify-center">
+                        + Add
+                    </button>
+                </form>
+
+                <!-- Task List Container -->
+                <div id="task-list" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                    <!-- Dynamic tasks will be injected here -->
+                </div>
+
+            </div>
+
+            <!-- Daily Target & Activity Analytics Card -->
+            <div class="glass-card rounded-3xl p-6">
+                
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">📊</span>
+                        <h2 class="font-bold text-base text-white">Daily Productivity Target</h2>
+                    </div>
+                    <span id="target-ratio" class="text-xs font-bold text-accentEmerald">0 / 8 Sessions</span>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full bg-bgDark rounded-full h-3 border border-cardBorder/50 overflow-hidden mb-6">
+                    <div id="target-progress-bar" class="bg-gradient-to-r from-accentViolet to-accentEmerald h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+
+                <!-- Session History Log -->
+                <div class="border-t border-cardBorder/50 pt-4">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Completed Sessions Log</h3>
+                    <div id="session-log-list" class="space-y-2 max-h-36 overflow-y-auto pr-1">
+                        <div class="text-xs text-gray-500 text-center py-3">No sessions completed yet today. Start focus time!</div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer class="w-full border-t border-cardBorder/40 py-4 px-4 text-center text-xs text-gray-500">
+       
+    </footer>
+
+    <script>
+        /* ==========================================================================
+           STATE MANAGEMENT & INITIALIZATION
+           ========================================================================== */
+        const MODES = {
+            focus: { name: 'Focus Time', duration: 25 * 60, color: '#7c3aed', badgeBg: 'bg-accentViolet/10', badgeText: 'text-accentViolet', badgeBorder: 'border-accentViolet/20' },
+            shortBreak: { name: 'Short Break', duration: 5 * 60, color: '#10b981', badgeBg: 'bg-accentEmerald/10', badgeText: 'text-accentEmerald', badgeBorder: 'border-accentEmerald/20' },
+            longBreak: { name: 'Long Break', duration: 15 * 60, color: '#ec4899', badgeBg: 'bg-accentPink/10', badgeText: 'text-accentPink', badgeBorder: 'border-accentPink/20' }
+        };
+
+        let currentMode = 'focus';
+        let timeLeft = MODES[currentMode].duration;
+        let timerInterval = null;
+        let isRunning = false;
+        
+        let activeTaskId = null;
+        let tasks = JSON.parse(localStorage.getItem('focusflow_tasks')) || [];
+        let stats = JSON.parse(localStorage.getItem('focusflow_stats')) || {
+            sessionsCompleted: 0,
+            totalFocusedMinutes: 0,
+            tasksCompleted: 0,
+            history: []
+        };
+
+        const CIRCLE_CIRCUMFERENCE = 578; // 2 * PI * r (r=92)
+
+        /* ==========================================================================
+           WEB AUDIO API SYNTHESIZER (NO EXTERNAL ASSETS REQUIRED)
+           ========================================================================== */
+        let audioCtx = null;
+        let ambientNode = null;
+        let ambientGainNode = null;
+        let currentAmbientType = 'off';
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Synthesize Beep Sound when Timer Ends
+        function playCompletionChime() {
+            initAudio();
+            const now = audioCtx.currentTime;
+            
+            // Oscillator 1
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(523.25, now); // C5
+            osc1.frequency.exponentialRampToValueAtTime(659.25, now + 0.3); // E5
+            gain1.gain.setValueAtTime(0.3, now);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.8);
+
+            // Oscillator 2 (Harmonic echo)
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(783.99, now + 0.15); // G5
+            gain2.gain.setValueAtTime(0.2, now + 0.15);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.9);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start(now + 0.15);
+            osc2.stop(now + 0.9);
+        }
+
+        // Synthesize Ambient Noise Generators
+        function playAmbient(type) {
+            initAudio();
+            stopAmbient();
+            currentAmbientType = type;
+
+            // Update UI Button Styles
+            document.querySelectorAll('.snd-btn').forEach(btn => {
+                btn.classList.remove('bg-accentViolet', 'text-white');
+                btn.classList.add('bg-bgDark', 'text-gray-300');
+            });
+
+            const activeBtn = document.getElementById(`snd-${type}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-bgDark', 'text-gray-300');
+                activeBtn.classList.add('bg-accentViolet', 'text-white');
+            }
+
+            if (type === 'off') return;
+
+            const bufferSize = audioCtx.sampleRate * 2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            let lastOut = 0.0;
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                if (type === 'rain') {
+                    // Filtered White Noise for Rain
+                    data[i] = (lastOut + (0.02 * white)) / 1.02;
+                    lastOut = data[i];
+                    data[i] *= 3.5;
+                } else if (type === 'pink') {
+                    // Pink Noise Approximation
+                    data[i] = (Math.random() - 0.5) * 0.5;
+                } else if (type === 'brown') {
+                    // Deep Brown Noise
+                    data[i] = (lastOut + (0.02 * white)) / 1.02;
+                    lastOut = data[i];
+                    data[i] *= 2.0;
+                }
+            }
+
+            ambientNode = audioCtx.createBufferSource();
+            ambientNode.buffer = buffer;
+            ambientNode.loop = true;
+
+            ambientGainNode = audioCtx.createGain();
+            const vol = parseFloat(document.getElementById('ambient-volume').value);
+            ambientGainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+
+            ambientNode.connect(ambientGainNode);
+            ambientGainNode.connect(audioCtx.destination);
+            ambientNode.start();
+        }
+
+        function stopAmbient() {
+            if (ambientNode) {
+                try { ambientNode.stop(); } catch(e){}
+                ambientNode.disconnect();
+                ambientNode = null;
+            }
+        }
+
+        function updateVolume(val) {
+            document.getElementById('volume-lbl').innerText = `${Math.round(val * 100)}%`;
+            if (ambientGainNode && audioCtx) {
+                ambientGainNode.gain.setValueAtTime(parseFloat(val), audioCtx.currentTime);
+            }
+        }
+
+        /* ==========================================================================
+           TIMER CONTROLLER
+           ========================================================================== */
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const timeString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            document.getElementById('time-display').innerText = timeString;
+            document.title = `${timeString} - ${MODES[currentMode].name} | FocusFlow`;
+
+            // Calculate SVG Circle Stroke Progress
+            const totalDuration = MODES[currentMode].duration;
+            const progressRatio = timeLeft / totalDuration;
+            const strokeOffset = CIRCLE_CIRCUMFERENCE * (1 - progressRatio);
+            
+            const circle = document.getElementById('progress-ring-circle');
+            circle.style.strokeDashoffset = strokeOffset;
+            circle.style.stroke = MODES[currentMode].color;
+        }
+
+        function toggleTimer() {
+            initAudio();
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        }
+
+        function startTimer() {
+            isRunning = true;
+            document.getElementById('lbl-start').innerText = 'Pause Focus';
+            document.getElementById('icon-start').innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+            document.getElementById('timer-status').innerText = 'Timer is actively running...';
+
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateDisplay();
+                } else {
+                    completeSession();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            document.getElementById('lbl-start').innerText = 'Resume Focus';
+            document.getElementById('icon-start').innerHTML = '<path d="M8 5v14l11-7z"/>';
+            document.getElementById('timer-status').innerText = 'Paused';
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            timeLeft = MODES[currentMode].duration;
+            document.getElementById('lbl-start').innerText = `Start ${currentMode === 'focus' ? 'Focus' : 'Break'}`;
+            document.getElementById('timer-status').innerText = 'Ready to start';
+            updateDisplay();
+        }
+
+        function skipSession() {
+            pauseTimer();
+            if (currentMode === 'focus') {
+                switchMode('shortBreak');
+            } else {
+                switchMode('focus');
+            }
+        }
+
+        function setCustomDuration(mins) {
+            pauseTimer();
+            MODES[currentMode].duration = mins * 60;
+            timeLeft = mins * 60;
+            updateDisplay();
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Tab styling update
+            ['focus', 'shortBreak', 'longBreak'].forEach(m => {
+                const tab = document.getElementById(`tab-${m}`);
+                if (m === mode) {
+                    tab.className = `flex-1 py-2 px-3 rounded-xl font-semibold text-xs sm:text-sm transition-all duration-200 text-white shadow-lg`;
+                    tab.style.backgroundColor = MODES[m].color;
+                } else {
+                    tab.className = `flex-1 py-2 px-3 rounded-xl font-semibold text-xs sm:text-sm text-gray-400 hover:text-white transition-all duration-200`;
+                    tab.style.backgroundColor = 'transparent';
+                }
+            });
+
+            // Update Badge
+            const badge = document.getElementById('mode-badge');
+            badge.innerText = MODES[mode].name;
+            badge.style.color = MODES[mode].color;
+
+            // Glow styling
+            const glow = document.getElementById('mode-glow');
+            glow.style.backgroundColor = `${MODES[mode].color}25`;
+
+            resetTimer();
+        }
+
+        function completeSession() {
+            pauseTimer();
+            playCompletionChime();
+
+            if (currentMode === 'focus') {
+                const durationMinutes = Math.round(MODES.focus.duration / 60);
+                stats.sessionsCompleted += 1;
+                stats.totalFocusedMinutes += durationMinutes;
+
+                // Record history log
+                const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                let logTaskName = 'General Study Session';
+
+                if (activeTaskId) {
+                    const task = tasks.find(t => t.id === activeTaskId);
+                    if (task) {
+                        task.completedPomo += 1;
+                        logTaskName = task.title;
+                    }
+                }
+
+                stats.history.unshift({
+                    task: logTaskName,
+                    time: timeNow,
+                    duration: durationMinutes
+                });
+
+                saveStats();
+                saveTasks();
+                renderTasks();
+                renderStats();
+
+                alert(`🎉 Great work! You completed a ${durationMinutes}-minute focus session.`);
+                switchMode('shortBreak');
+            } else {
+                alert(`☕ Break time is over! Ready to dive back in?`);
+                switchMode('focus');
+            }
+        }
+
+        /* ==========================================================================
+           TASK MANAGEMENT & LINKING
+           ========================================================================== */
+        function handleAddTask(e) {
+            e.preventDefault();
+            const input = document.getElementById('task-input');
+            const pomoInput = document.getElementById('task-pomo-input');
+
+            const title = input.value.trim();
+            const targetPomo = parseInt(pomoInput.value) || 1;
+
+            if (!title) return;
+
+            const newTask = {
+                id: Date.now().toString(),
+                title: title,
+                targetPomo: targetPomo,
+                completedPomo: 0,
+                completed: false
+            };
+
+            tasks.push(newTask);
+            saveTasks();
+            renderTasks();
+
+            input.value = '';
+            pomoInput.value = '1';
+
+            // Automatically set as active if no active task exists
+            if (!activeTaskId) {
+                setActiveTask(newTask.id);
+            }
+        }
+
+        function toggleTaskComplete(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                if (task.completed) {
+                    stats.tasksCompleted += 1;
+                    if (activeTaskId === id) clearActiveTask();
+                } else {
+                    stats.tasksCompleted = Math.max(0, stats.tasksCompleted - 1);
+                }
+                saveStats();
+                saveTasks();
+                renderTasks();
+                renderStats();
+            }
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            if (activeTaskId === id) clearActiveTask();
+            saveTasks();
+            renderTasks();
+        }
+
+        function setActiveTask(id) {
+            activeTaskId = id;
+            const task = tasks.find(t => t.id === id);
+            const banner = document.getElementById('active-task-banner');
+            const titleEl = document.getElementById('active-task-title');
+
+            if (task) {
+                titleEl.innerText = `${task.title} (${task.completedPomo}/${task.targetPomo} Pomos)`;
+                banner.classList.remove('hidden');
+            } else {
+                banner.classList.add('hidden');
+            }
+            renderTasks();
+        }
+
+        function clearActiveTask() {
+            activeTaskId = null;
+            document.getElementById('active-task-banner').classList.add('hidden');
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const listEl = document.getElementById('task-list');
+            document.getElementById('task-counter-badge').innerText = `${tasks.length} Task${tasks.length === 1 ? '' : 's'}`;
+
+            if (tasks.length === 0) {
+                listEl.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-center text-gray-500 py-10">
+                        <span class="text-3xl mb-2">📌</span>
+                        <p class="text-xs">No study tasks created yet.</p>
+                        <p class="text-[10px] text-gray-600 mt-1">Add a task above to attach it to your timer!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = tasks.map(t => {
+                const isActive = t.id === activeTaskId;
+                return `
+                    <div class="group flex items-center justify-between p-3 rounded-2xl border transition ${isActive ? 'bg-accentViolet/15 border-accentViolet/50' : 'bg-bgDark/80 border-cardBorder/60 hover:border-cardBorder'}">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTaskComplete('${t.id}')" 
+                                   class="w-4 h-4 rounded border-cardBorder text-accentViolet focus:ring-0 focus:ring-offset-0 cursor-pointer accent-accentViolet">
+                            <div class="flex flex-col overflow-hidden">
+                                <span class="text-xs sm:text-sm font-semibold truncate ${t.completed ? 'line-through text-gray-500' : 'text-gray-200'}">${escapeHtml(t.title)}</span>
+                                <span class="text-[10px] text-gray-400">🍅 ${t.completedPomo} / ${t.targetPomo} sessions</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1">
+                            ${!t.completed ? `
+                                <button onclick="setActiveTask('${t.id}')" title="Target on timer" class="text-[10px] font-semibold px-2 py-1 rounded-lg border transition ${isActive ? 'bg-accentViolet text-white border-accentViolet' : 'bg-cardDark text-gray-400 border-cardBorder hover:text-white'}">
+                                    ${isActive ? 'Active' : 'Target'}
+                                </button>
+                            ` : ''}
+                            <button onclick="deleteTask('${t.id}')" class="text-gray-500 hover:text-red-400 p-1 rounded-lg transition" title="Delete Task">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /* ==========================================================================
+           STATS & ANALYTICS
+           ========================================================================== */
+        function renderStats() {
+            document.getElementById('stat-sessions').innerText = stats.sessionsCompleted;
+            document.getElementById('stat-time').innerText = `${stats.totalFocusedMinutes}m`;
+            document.getElementById('stat-tasks').innerText = stats.tasksCompleted;
+
+            // Daily Target (Goal: 8 Pomodoros)
+            const targetRatio = Math.min(stats.sessionsCompleted, 8);
+            const percentage = Math.round((targetRatio / 8) * 100);
+
+            document.getElementById('target-ratio').innerText = `${stats.sessionsCompleted} / 8 Sessions`;
+            document.getElementById('target-progress-bar').style.width = `${percentage}%`;
+
+            // History Log Render
+            const historyEl = document.getElementById('session-log-list');
+            if (stats.history.length === 0) {
+                historyEl.innerHTML = `<div class="text-xs text-gray-500 text-center py-3">No sessions completed yet today. Start focus time!</div>`;
+                return;
+            }
+
+            historyEl.innerHTML = stats.history.map(item => `
+                <div class="flex items-center justify-between bg-bgDark/60 px-3 py-2 rounded-xl border border-cardBorder/40 text-xs">
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <span class="text-accentEmerald">✓</span>
+                        <span class="text-gray-300 font-medium truncate">${escapeHtml(item.task)}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-500 text-[10px] flex-shrink-0">
+                        <span>${item.duration} mins</span>
+                        <span>•</span>
+                        <span>${item.time}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /* ==========================================================================
+           UTILITY FUNCTIONS & STORAGE
+           ========================================================================== */
+        function saveTasks() {
+            localStorage.setItem('focusflow_tasks', JSON.stringify(tasks));
+        }
+
+        function saveStats() {
+            localStorage.setItem('focusflow_stats', JSON.stringify(stats));
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Initialize App on DOM Load
+        window.addEventListener('DOMContentLoaded', () => {
+            updateTimerDisplay();
+            renderTasks();
+            renderStats();
+        });
+    </script>
+</body>
+</html>
